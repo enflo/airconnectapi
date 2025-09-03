@@ -1,1 +1,1 @@
-"""Application package for OpenFlight FastAPI service."""
+"""Application package for Airconnect API FastAPI service."""

@@ -1,4 +1,4 @@
-"""Compatibility wrapper for OpenFlight FastAPI application.
+"""Compatibility wrapper for Airconnect API FastAPI application.
 
 This module re-exports the app and create_app from app.main to preserve
 imports like `uvicorn main:app` and `from main import app` used by tests.

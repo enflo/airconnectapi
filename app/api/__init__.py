@@ -1,1 +1,1 @@
-"""API routers for OpenFlight application."""
+"""API routers for Airconnect API application."""

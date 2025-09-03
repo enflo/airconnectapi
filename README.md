@@ -1,294 +1,113 @@
-# OpenFlight
+# Airconnect API
 
-A modern FastAPI-based web application for flight management and booking services.
+A simple, open project exploring airport data. We combine public datasets into a fast, searchable experience with a small, focused FastAPI app and a clean JSON API.
 
-## Features
+- Simplicity: a small codebase that’s easy to read, run, and extend.
+- Openness: open source, open data, transparent architecture.
+- Practicality: rational defaults, fast responses, useful endpoints with filters and pagination.
 
-- 🚀 Fast and modern API built with FastAPI
-- 📝 Automatic API documentation with Swagger UI
-- 🔒 Type safety with Pydantic models
-- 🧪 Comprehensive testing with pytest
-- 🐳 Docker support for easy deployment
-- 📦 Modern Python packaging with pyproject.toml
+## What it is
+Airconnect API ingests public CSV and JSON sources (OurAirports, OpenFlights samples) and exposes:
 
-## Requirements
+- A lightweight website to browse airports and view them on a map.
+- A JSON API with filtering and pagination headers for easy client consumption.
+- A file-based SQLite database prepared at startup from impoted_data/ (idempotent).
 
-- Python 3.8+
-- FastAPI
-- Uvicorn
+Data sources:
+- OurAirports CSV datasets (airports, countries, regions, comments): https://ourairports.com/data/
+- OpenFlights sample airline/route information: https://openflights.org/data.html
+- airline-route-data project (compiled route samples): https://github.com/Jonty/airline-route-data
 
-## Installation
+## Quick start
 
-### Using pip
+Prerequisites: Python 3.8+ (tested on 3.12). macOS/Linux recommended.
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/openflight.git
-cd openflight
-```
+1) Create and activate a virtualenv
+- python -m venv .venv && source .venv/bin/activate
 
-2. Create a virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
+2) Install dependencies
+- Recommended for contributors (dev extras): pip install -e .[dev]
+- Runtime-only alternative: pip install -r requirements.txt
 
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+3) Run the app
+- uvicorn main:app --reload
 
-### Using pip with pyproject.toml
+Open https://airconnectapi.com/.
 
-```bash
-pip install -e .
-```
+Notes
+- Static files are under app/static and mounted at /static.
+- CORS and rate-limiting are configured via environment variables (see Settings below).
+- The SQLite DB is stored at data/openflight.db and is populated at startup from impoted_data/.
 
-For development dependencies:
-```bash
-pip install -e ".[dev]"
-```
+## API overview
 
-## Usage
+Routers
+- Public site: HTML pages under /
+- System: health/system endpoints
+- Data API: under /api (airports, etc.)
 
-### Running the Application
+Pagination headers on list endpoints
+- X-Total-Count, X-Page, X-Page-Size, X-Total-Pages
 
-Start the development server:
-```bash
-uvicorn main:app --reload
-```
+Filtering
+- Case-insensitive filters as used in tests (see tests/test_filters.py).
 
-The API will be available at:
-- Main application: http://127.0.0.1:8000
-- Interactive API docs (Swagger UI): http://127.0.0.1:8000/docs
-- Alternative API docs (ReDoc): http://127.0.0.1:8000/redoc
+Run example
+- curl 'https://airconnectapi.com/api/airports?page=1&page_size=20&country=us'
 
-### API Endpoints
+## Settings (env variables)
 
-- `GET /` - Welcome message
-- `GET /hello/{name}` - Personalized greeting
+- APP_NAME: default "AriConnect" — FastAPI title.
+- ENVIRONMENT: default "production".
+- ALLOWED_ORIGINS: CSV or * for CORS. Default *.
+- RATE_LIMIT_ENABLED: 1/true/yes/on to enable rate limiting. Default 1.
+- RATE_LIMIT_REQUESTS: integer; default 120.
+- RATE_LIMIT_WINDOW_SECONDS: integer; default 60.
+- RATE_LIMIT_SCOPE: path prefix to apply rate limiting; default /api.
+- RATE_LIMIT_CLIENT_IP_HEADER: optional header to trust for client IP (e.g., X-Forwarded-For).
 
-## Development
+Example
+- RATE_LIMIT_ENABLED=0 ALLOWED_ORIGINS=http://localhost:5173 uvicorn main:app --reload
 
-### Code Formatting
+## Tests
 
-Format code with Black:
-```bash
-black .
-```
+- Install dev deps: pip install -e .[dev]
+- Run all tests: pytest
+- Useful: pytest tests/test_pagination.py::test_pagination_pages_disjoint -q
 
-Sort imports with isort:
-```bash
-isort .
-```
+Troubleshooting
+- If rate limiting causes 429s during tests, set RATE_LIMIT_ENABLED=0.
+- If SQLite file is locked, ensure no parallel processes use data/openflight.db.
 
-### Linting and Type Checking
+## Project structure
 
-Use Ruff for linting:
-```bash
-ruff check .
-```
-
-Optionally auto-fix issues:
-```bash
-ruff check . --fix
-```
-
-Run MyPy for static type checking:
-```bash
-mypy .
-```
-
-### Testing
-
-Run tests with pytest:
-```bash
-pytest
-```
-
-Run tests with coverage:
-```bash
-pytest --cov=openflight
-```
-
-### Docker
-
-Build the Docker image:
-```bash
-docker build -t openflight .
-```
-
-Run the container:
-```bash
-docker run -p 8000:8000 openflight
-```
-
-Or use docker-compose:
-```bash
-docker-compose up
-```
-
-## Project Structure
-
-```
-openflight/
-├── app/
-│   ├── __init__.py
-│   ├── main.py              # FastAPI application factory (app/create_app)
-│   ├── api/
-│   │   ├── __init__.py
-│   │   └── routes.py        # APIRouter with endpoints
-│   ├── core/
-│   │   ├── __init__.py
-│   │   ├── config.py        # Settings (env-based)
-│   │   └── logging.py       # Logging setup
-│   └── models/
-│       ├── __init__.py
-│       └── common.py        # Pydantic response models
-├── main.py                   # Thin wrapper re-exporting app from app.main
-├── scripts/
-│   ├── download_data.py
-│   └── combine_data.py
-├── impoted_data/             # Local datasets (git-ignored)
-├── tests/                    # Test files
-├── requirements.txt          # Python dependencies
-├── pyproject.toml            # Modern Python project configuration
-├── Dockerfile                # Docker configuration
-├── docker-compose.yml        # Docker Compose configuration
-├── .gitignore                # Git ignore patterns
-└── README.md                 # Project documentation
-```
+- main.py: compatibility wrapper exporting app and create_app from app.main
+- app/main.py: app factory, middleware, routers, lifespan setup
+- app/api/system.py: health/system endpoints
+- app/api/public.py: public routes and templates
+- app/api/api.py: data API endpoints (filters/pagination)
+- app/core/config.py: env-driven settings
+- app/core/rate_limit.py: lightweight rate limiting middleware
+- app/core/logging.py: logging configuration
+- app/models/db.py: SQLite + populate_db_from_files reading from impoted_data/
+- app/templates: Jinja2 templates for site and API pages
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests and ensure they pass
-5. Format your code (`black .` and `isort .`)
-6. Commit your changes (`git commit -m 'Add amazing feature'`)
-7. Push to the branch (`git push origin feature/amazing-feature`)
-8. Open a Pull Request
+- Fork the repo, create a feature branch, run tests, and open a PR.
+- Code style: Black, isort, Ruff, mypy. See pyproject.toml for settings.
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contributing guidelines.
+Quick checks
+- ruff check .
+- black --check .
+- isort --check-only .
+- mypy .
 
 ## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-If you have any questions or need help, please:
-- Check the [documentation](https://github.com/yourusername/openflight/wiki)
-- Open an [issue](https://github.com/yourusername/openflight/issues)
-- Join our [discussions](https://github.com/yourusername/openflight/discussions)
-
-## Roadmap
-
-- [ ] User authentication and authorization
-- [ ] Flight search and booking functionality
-- [ ] Payment integration
-- [ ] Email notifications
-- [ ] Admin dashboard
-- [ ] Mobile API endpoints
-- [ ] Real-time flight updates
+MIT — see LICENSE.
 
 ## Acknowledgments
-
-- [FastAPI](https://fastapi.tiangolo.com/) - The web framework used
-- [Uvicorn](https://www.uvicorn.org/) - ASGI server implementation
-- [Pydantic](https://pydantic-docs.helpmanual.io/) - Data validation library
-
-## Dataset Download
-
-A helper script is provided to download public aviation datasets into the local impoted_data directory (ignored by Git).
-
-Files downloaded:
-- airports.csv
-- runways.csv
-- airport-comments.csv
-- airport-frequencies.csv
-- regions.csv
-- navaids.csv
-- countries.csv
-- airlines.dat
-- routes.dat
-
-Usage:
-
-1. Ensure dependencies are installed (once per environment):
-```bash
-pip install -r requirements.txt
-```
-
-2. Run the downloader (default output: impoted_data):
-```bash
-python scripts/download_data.py
-```
-
-Options:
-- Choose a different output directory:
-```bash
-python scripts/download_data.py -o data
-```
-- Force re-download and overwrite existing files:
-```bash
-python scripts/download_data.py -f
-```
-
-The downloaded files will be saved under the chosen directory, e.g. impoted_data/airports.csv.
-
-
-## Data: Combine OurAirports CSVs to JSON
-
-This project includes a small utility to combine multiple OurAirports CSV files into a single JSON list of airport objects enriched with country, region, and comments.
-
-Inputs expected in impoted_data/:
-- airports.csv
-- countries.csv
-- regions.csv
-- airport-comments.csv
-
-The files can be downloaded/updated with:
-
-```bash
-python scripts/download_data.py --output impoted_data
-```
-
-Generate the combined JSON:
-
-```bash
-python scripts/combine_data.py \
-  --input-dir impoted_data \
-  --output impoted_data/airports_combined.json \
-  --indent 2
-```
-
-Quick preview to stdout (first 5 airports, minified):
-
-```bash
-python scripts/combine_data.py --input-dir impoted_data --limit 5 --indent 0
-```
-
-Notes:
-- Joins use airports.iso_country -> countries.code, airports.iso_region -> regions.code.
-- Comments are attached by airportRef (airport id), falling back to airportIdent (airport ident) when needed.
-- Numeric fields such as id and elevation_ft are parsed to integers when possible; missing values are set to null.
-- The output is a JSON array where each airport includes nested objects: country, region, and a comments list.
-
-
-## Configuration
-
-The application reads a few environment variables:
-
-- ALLOWED_ORIGINS: Comma-separated list of origins for CORS. Use * to allow all (default).
-- ENVIRONMENT: Arbitrary environment label (e.g., development, production). Default: production.
-- APP_NAME: Application title shown in docs. Default: OpenFlight API.
-
-Examples:
-
-```bash
-ALLOWED_ORIGINS="https://example.com, http://localhost:3000" \
-APP_NAME="OpenFlight API" \
-uvicorn main:app --host 0.0.0.0 --port 8000
-```
+- FastAPI — framework
+- Uvicorn — ASGI server
+- Pydantic — data validation
+- OurAirports/OpenFlights — datasets

@@ -194,8 +194,8 @@ Contributors will be recognized in:
 
 ## License
 
-By contributing to OpenFlight, you agree that your contributions will be licensed under the MIT License.
+By contributing to Airconnect API, you agree that your contributions will be licensed under the MIT License.
 
 ---
 
-Thank you for contributing to OpenFlight! 🚀
+Thank you for contributing to Airconnect API! 🚀

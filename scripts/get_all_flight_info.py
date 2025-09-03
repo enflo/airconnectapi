@@ -88,7 +88,7 @@ def download_file(
 def download_all(urls: Iterable[str], output_dir: Path, force: bool = False) -> None:
     timeout = httpx.Timeout(connect=10.0, read=60.0, write=30.0, pool=10.0)
     limits = httpx.Limits(max_keepalive_connections=5, max_connections=10)
-    headers = {"User-Agent": "openflight-downloader/1.0"}
+    headers = {"User-Agent": "airconnectapi-downloader/1.0"}
 
     with httpx.Client(timeout=timeout, limits=limits, headers=headers) as client:
         for url in urls:

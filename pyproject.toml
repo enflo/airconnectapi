@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
 authors = [
-    {name = "OpenFlight Contributors"},
+    {name = "Airconnect API Contributors"},
 ]
 keywords = ["fastapi", "api", "web", "async"]
 classifiers = [

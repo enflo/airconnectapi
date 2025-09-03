@@ -1,1 +1,1 @@
-# Tests package for OpenFlight
+# Tests package for Airconnect API
