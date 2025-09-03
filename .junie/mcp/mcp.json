@@ -1,0 +1,39 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp", "--api-key", "YOUR_API_KEY"]
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ], 
+      "env": {},
+      "disabled": false,
+      "autoApprove": [
+        "analyze_sequence",
+        "suggest_next_step"
+      ]
+    },
+    "memory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-knowledge-graph",
+        "--memory-path",
+        "/Users/antoniflorit/.aim/"
+      ],
+      "autoapprove": [
+        "aim_create_entities",
+        "aim_create_relations",
+        "aim_add_observations",
+        "aim_search_nodes",
+        "aim_read_graph",
+        "aim_open_nodes",
+        "aim_list_databases"
+      ]
+    }
+  }
+}

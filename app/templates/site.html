@@ -1,0 +1,383 @@
+{% extends 'base.html' %}
+{% set title = 'Airports' %}
+{% set description = 'Browse and filter airports with powerful search and pagination. View counts by type and explore details.' %}
+
+{% block content %}
+  <div class="max-w-7xl mx-auto p-6">
+    <!-- Stats: Number of airports by type -->
+    <section class="mb-6" aria-labelledby="stats-title">
+      <h2 id="stats-title" class="sr-only">Airport statistics</h2>
+      <dl class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-6">
+        <div class="relative overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:px-6">
+          <dt class="truncate text-sm font-medium text-gray-500">Total</dt>
+          <dd id="stat-total" class="mt-1 text-2xl font-semibold tracking-tight text-gray-900">—</dd>
+        </div>
+        <div class="relative overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:px-6">
+          <dt class="truncate text-sm font-medium text-gray-500">Large</dt>
+          <dd id="stat-large" class="mt-1 text-2xl font-semibold tracking-tight text-gray-900">—</dd>
+        </div>
+        <div class="relative overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:px-6">
+          <dt class="truncate text-sm font-medium text-gray-500">Medium</dt>
+          <dd id="stat-medium" class="mt-1 text-2xl font-semibold tracking-tight text-gray-900">—</dd>
+        </div>
+        <div class="relative overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:px-6">
+          <dt class="truncate text-sm font-medium text-gray-500">Small</dt>
+          <dd id="stat-small" class="mt-1 text-2xl font-semibold tracking-tight text-gray-900">—</dd>
+        </div>
+        <div class="relative overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:px-6">
+          <dt class="truncate text-sm font-medium text-gray-500">Heliport</dt>
+          <dd id="stat-heliport" class="mt-1 text-2xl font-semibold tracking-tight text-gray-900">—</dd>
+        </div>
+        <div class="relative overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:px-6">
+          <dt class="truncate text-sm font-medium text-gray-500">Seaplane</dt>
+          <dd id="stat-seaplane" class="mt-1 text-2xl font-semibold tracking-tight text-gray-900">—</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="bg-white shadow rounded p-4 mb-6">
+      <form id="filters" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="col-span-2 md:col-span-3">
+          <label for="q" class="sr-only">Search</label>
+          <div class="relative rounded-md shadow-sm">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <svg viewBox="0 0 20 20" fill="currentColor" class="size-5 text-gray-400"><path fill-rule="evenodd" d="M12.9 14.32a8 8 0 111.414-1.414l3.387 3.386a1 1 0 01-1.414 1.415l-3.387-3.387zM14 8a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"/></svg>
+            </div>
+            <input id="q" class="block w-full rounded-md border-0 py-1.5 pl-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="Search airports (name, IATA/ICAO, municipality, country, region)">
+          </div>
+        </div>
+        <div class="relative">
+          <label for="type" class="sr-only">Type</label>
+          <div class="relative rounded-md shadow-sm">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <svg viewBox="0 0 20 20" fill="currentColor" class="size-5 text-gray-400"><path fill-rule="evenodd" d="M12.9 14.32a8 8 0 111.414-1.414l3.387 3.386a1 1 0 01-1.414 1.415l-3.387-3.387zM14 8a6 6 0 11-12 0 6 6 0 0112 0z" clip-rule="evenodd"/></svg>
+            </div>
+            <input id="type" class="block w-full rounded-md border-0 py-1.5 pl-10 pr-8 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" placeholder="Any" title="Filter by airport type (e.g., large_airport)" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="type-listbox">
+          </div>
+          <button type="button" class="absolute right-2 top-2.5 text-gray-400 hover:text-gray-600" tabindex="-1" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+          </button>
+          <ul id="type-listbox" class="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded shadow hidden max-h-48 overflow-auto" role="listbox">
+            <li class="px-3 py-2 hover:bg-gray-100 cursor-pointer" data-value="">Any</li>
+            <li class="px-3 py-2 hover:bg-gray-100 cursor-pointer" data-value="large_airport">large_airport</li>
+            <li class="px-3 py-2 hover:bg-gray-100 cursor-pointer" data-value="medium_airport">medium_airport</li>
+            <li class="px-3 py-2 hover:bg-gray-100 cursor-pointer" data-value="small_airport">small_airport</li>
+            <li class="px-3 py-2 hover:bg-gray-100 cursor-pointer" data-value="heliport">heliport</li>
+            <li class="px-3 py-2 hover:bg-gray-100 cursor-pointer" data-value="seaplane_base">seaplane_base</li>
+          </ul>
+        </div>
+        <div class="flex items-end gap-2 col-span-2">
+          <button id="apply" class="inline-flex items-center px-5 py-2 rounded-full bg-gray-900 text-white hover:bg-black">Apply</button>
+          <button id="clear" type="button" class="inline-flex items-center px-4 py-2 rounded-full border border-gray-300 bg-white text-gray-900 hover:bg-gray-50">Clear</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="bg-white shadow rounded p-4">
+      <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+        <table class="min-w-full divide-y divide-gray-300">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Name</th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">IATA</th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">ICAO</th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Country</th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Region</th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Municipality</th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Type</th>
+            </tr>
+          </thead>
+          <tbody id="rows" class="divide-y divide-gray-200 bg-white"></tbody>
+        </table>
+      </div>
+      <div class="mt-3 border-t pt-3 bg-gray-50/60 rounded-b">
+        <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div id="meta" class="text-sm text-gray-600">Loading...</div>
+          <div class="flex items-center gap-2 justify-start md:justify-end">
+            <button id="prev" class="inline-flex items-center px-3 py-1.5 rounded-md bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
+            <div id="pager" class="inline-flex items-center gap-1"></div>
+            <button id="next" class="inline-flex items-center px-3 py-1.5 rounded-md bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    let page = 1;
+    const PAGE_SIZE = 50;
+    let totalPagesGlobal = 1;
+
+    function qs(id){ return document.getElementById(id); }
+
+    function buildParams() {
+      const params = new URLSearchParams();
+      const q = qs('q') ? qs('q').value.trim() : '';
+      const type = qs('type') ? qs('type').value.trim() : '';
+
+      if (q) params.set('q', q);
+      if (type) params.set('type', type);
+      params.set('size', PAGE_SIZE);
+      params.set('page', page);
+
+      return params;
+    }
+
+    async function fetchAirports() {
+      const params = buildParams();
+      const url = '/api/airports?' + params.toString();
+      const meta = qs('meta');
+      meta.textContent = 'Loading...';
+      try {
+        const resp = await fetch(url);
+        const data = await resp.json();
+        const total = parseInt(resp.headers.get('X-Total-Count') || data.length || 0);
+        const xpage = parseInt(resp.headers.get('X-Page') || page);
+        const size = parseInt(resp.headers.get('X-Page-Size') || String(PAGE_SIZE), 10);
+        const totalPages = parseInt(resp.headers.get('X-Total-Pages') || Math.ceil((total || 0) / (size || 1)));
+
+        totalPagesGlobal = isNaN(totalPages) ? 1 : totalPages;
+        renderRows(data);
+        renderPager(totalPagesGlobal, xpage);
+        qs('prev').disabled = xpage <= 1;
+        qs('next').disabled = xpage >= totalPagesGlobal;
+
+        meta.textContent = `Total: ${total} • Page ${xpage} of ${totalPagesGlobal} • Showing ${data.length}`;
+      } catch (err) {
+        meta.textContent = 'Failed to load data';
+        console.error(err);
+      }
+    }
+
+    function renderRows(items) {
+      const tbody = qs('rows');
+      tbody.innerHTML = '';
+      for (const a of items) {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-gray-50';
+        tr.innerHTML = `
+          <td class="whitespace-nowrap px-3 py-2 text-sm font-medium text-gray-900"><a href="/airports/${encodeURIComponent(a.slug || '')}" class="text-indigo-600 hover:text-indigo-500 hover:underline">${escapeHtml(a.name || '')}</a></td>
+          <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-700">${escapeHtml(a.iata_code || '')}</td>
+          <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-700">${escapeHtml(a.icao_code || '')}</td>
+          <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-700">${escapeHtml((a.country && a.country.name) || a.iso_country || '')}</td>
+          <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-700">${escapeHtml((a.region && a.region.name) || a.iso_region || '')}</td>
+          <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-700">${escapeHtml(a.municipality || '')}</td>
+          <td class="whitespace-nowrap px-3 py-2 text-sm text-gray-700">${escapeHtml(a.type || '')}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, s => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[s]));
+    }
+
+    function computePages(totalPages, current) {
+      const pages = [];
+      const win = 2;
+      const first = 1;
+      const last = Math.max(1, totalPages);
+      const start = Math.max(first + 1, current - win);
+      const end = Math.min(last - 1, current + win);
+      pages.push(first);
+      if (start > first + 1) pages.push('...');
+      for (let p = start; p <= end; p++) {
+        if (p >= first && p <= last) pages.push(p);
+      }
+      if (end < last - 1) pages.push('...');
+      if (last !== first) pages.push(last);
+      return pages;
+    }
+
+    function renderPager(totalPages, current) {
+      const container = qs('pager');
+      container.innerHTML = '';
+      const pages = computePages(totalPages, current);
+      for (const p of pages) {
+        if (p === '...') {
+          const span = document.createElement('span');
+          span.className = 'px-2 text-gray-400';
+          span.textContent = '...';
+          container.appendChild(span);
+        } else {
+          const btn = document.createElement('button');
+          const isCurrent = (p === current);
+          btn.className = 'px-3 py-1 rounded-full ' + (isCurrent ? 'bg-gray-900 text-white' : 'bg-gray-100 hover:bg-gray-200');
+          btn.textContent = String(p);
+          btn.disabled = isCurrent;
+          btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!isCurrent) {
+              page = p;
+              fetchAirports();
+            }
+          });
+          container.appendChild(btn);
+        }
+      }
+    }
+
+    // --- Simple Combobox Logic for Type ---
+    (function setupTypeCombobox(){
+      const input = document.getElementById('type');
+      const list = document.getElementById('type-listbox');
+      if (!input || !list) return;
+
+      function showList(){
+        list.classList.remove('hidden');
+        input.setAttribute('aria-expanded', 'true');
+      }
+      function hideList(){
+        list.classList.add('hidden');
+        input.setAttribute('aria-expanded', 'false');
+      }
+      function filterList(){
+        const q = (input.value || '').toLowerCase();
+        const items = Array.from(list.querySelectorAll('li'));
+        for (const li of items) {
+          const txt = (li.textContent || '').toLowerCase();
+          li.style.display = (!q || txt.includes(q)) ? '' : 'none';
+        }
+      }
+      function clearActive(){
+        list.querySelectorAll('.bg-gray-100').forEach(el => {
+          el.classList.remove('bg-gray-100');
+        });
+      }
+      function moveActive(dir){
+        const items = Array.from(list.querySelectorAll('li')).filter(li => li.style.display !== 'none');
+        if (items.length === 0) return;
+        const current = items.findIndex(li => li.classList.contains('bg-gray-100'));
+        let next = current + dir;
+        if (current === -1) next = dir > 0 ? 0 : items.length - 1;
+        if (next < 0) next = items.length - 1;
+        if (next >= items.length) next = 0;
+        clearActive();
+        items[next].classList.add('bg-gray-100');
+        items[next].scrollIntoView({ block: 'nearest' });
+      }
+      function selectLi(li){
+        const val = li.getAttribute('data-value') || '';
+        input.value = val;
+        hideList();
+      }
+
+      input.addEventListener('focus', () => { filterList(); showList(); });
+      input.addEventListener('click', () => { filterList(); showList(); });
+      input.addEventListener('input', () => { filterList(); showList(); });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown') { e.preventDefault(); showList(); moveActive(1); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); showList(); moveActive(-1); }
+        else if (e.key === 'Enter') {
+          const active = list.querySelector('.bg-gray-100');
+          if (active) { e.preventDefault(); selectLi(active); }
+        } else if (e.key === 'Escape') { hideList(); }
+      });
+
+      list.addEventListener('mousedown', (e) => {
+        const li = e.target.closest('li');
+        if (li) { e.preventDefault(); selectLi(li); }
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!list.contains(e.target) && e.target !== input) hideList();
+      });
+
+      // Initialize placeholder state
+      hideList();
+    })();
+
+    async function fetchCountForType(type) {
+      const params = new URLSearchParams();
+      params.set('size', '1');
+      if (type) params.set('type', type);
+      const resp = await fetch('/api/airports?' + params.toString());
+      if (!resp.ok) throw new Error('Failed to fetch count');
+      const header = resp.headers.get('X-Total-Count');
+      let count = header ? parseInt(header, 10) : NaN;
+      if (isNaN(count)) {
+        try {
+          const arr = await resp.json();
+          count = Array.isArray(arr) ? arr.length : 0;
+        } catch {
+          count = 0;
+        }
+      }
+      return isNaN(count) ? 0 : count;
+    }
+
+    function setStat(id, val) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (val == null || isNaN(val)) { el.textContent = '—'; return; }
+      try { el.textContent = new Intl.NumberFormat().format(val); }
+      catch { el.textContent = String(val); }
+    }
+
+    async function loadStats() {
+      try {
+        const [total, large, medium, small, heli, sea] = await Promise.all([
+          fetchCountForType(''),
+          fetchCountForType('large_airport'),
+          fetchCountForType('medium_airport'),
+          fetchCountForType('small_airport'),
+          fetchCountForType('heliport'),
+          fetchCountForType('seaplane_base'),
+        ]);
+        setStat('stat-total', total);
+        setStat('stat-large', large);
+        setStat('stat-medium', medium);
+        setStat('stat-small', small);
+        setStat('stat-heliport', heli);
+        setStat('stat-seaplane', sea);
+      } catch (e) {
+        setStat('stat-total', NaN);
+        setStat('stat-large', NaN);
+        setStat('stat-medium', NaN);
+        setStat('stat-small', NaN);
+        setStat('stat-heliport', NaN);
+        setStat('stat-seaplane', NaN);
+        console.error('Failed to load stats', e);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('apply').addEventListener('click', (e) => {
+        e.preventDefault();
+        page = 1;
+        fetchAirports();
+      });
+
+      document.getElementById('clear').addEventListener('click', () => {
+        for (const id of ['q','type']) {
+          const el = document.getElementById(id);
+          if (el) el.value = '';
+        }
+        page = 1;
+        fetchAirports();
+      });
+
+      document.getElementById('prev').addEventListener('click', () => { if (page > 1) { page -= 1; fetchAirports(); }});
+      document.getElementById('next').addEventListener('click', () => { if (page < totalPagesGlobal) { page += 1; fetchAirports(); }});
+
+      // Allow Enter to submit filters
+      const form = document.getElementById('filters');
+      if (form) {
+        form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          page = 1;
+          fetchAirports();
+        });
+      }
+
+      // Initial load
+      loadStats();
+      fetchAirports();
+    });
+  </script>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% set title = 'API • ' ~ ((settings and settings.app_name) or 'App') %}
+{% set description = 'Documentation for the ' ~ (((settings and settings.app_name) or 'App') ~ ' Airports API: endpoints, parameters, pagination, and rate limits.') %}
+
+{% block content %}
+  <div class="mx-auto max-w-3xl">
+    <header class="pt-10 pb-6">
+      <h1 class="text-3xl font-bold tracking-tight text-gray-900">{{ ((settings and settings.app_name) or 'App') ~ ' API' }}</h1>
+      <p class="mt-2 text-gray-600">Simple JSON endpoints to browse airports. Filter, paginate, and fetch details. Built with FastAPI.</p>
+    </header>
+
+    <section class="mt-4 border rounded-md">
+      <button type="button" class="w-full flex items-center justify-between px-4 py-3 text-left" data-accordion-button aria-expanded="true" aria-controls="panel-base-url">
+        <span class="text-xl font-semibold text-gray-900">Base URL</span>
+        <svg class="size-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/></svg>
+      </button>
+      <div id="panel-base-url" class="px-4 pb-4">
+        <pre class="mt-2 rounded bg-gray-50 border p-3 text-sm overflow-x-auto"><code>{{ (request and request.base_url) or '' }}api</code></pre>
+      </div>
+    </section>
+
+    <section class="mt-4 border rounded-md">
+      <button type="button" class="w-full flex items-center justify-between px-4 py-3 text-left" data-accordion-button aria-expanded="false" aria-controls="panel-list-airports">
+        <span class="text-xl font-semibold text-gray-900">List airports</span>
+        <svg class="size-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/></svg>
+      </button>
+      <div id="panel-list-airports" class="px-4 pb-4 hidden">
+      <p class="mt-2 text-gray-600">GET /api/airports — Returns airports with optional filters. Defaults to 50 results unless you use pagination.</p>
+      <div class="mt-3">
+        <h3 class="text-sm font-medium text-gray-900">Query parameters</h3>
+        <ul class="mt-2 space-y-1 text-sm text-gray-700 list-disc pl-6">
+          <li>q — unified search across name, codes, municipality, country/region</li>
+          <li>iata, icao</li>
+          <li>municipality, country_name, region_name</li>
+          <li>iso_country, iso_region</li>
+          <li>type — large_airport, medium_airport, small_airport, heliport, seaplane_base</li>
+          <li>limit — number of results (ignored if size provided)</li>
+          <li>page (1-based), size — enable pagination and adds pagination headers</li>
+        </ul>
+      </div>
+      <div class="mt-3">
+        <h3 class="text-sm font-medium text-gray-900">Example</h3>
+        <pre class="mt-2 rounded bg-gray-50 border p-3 text-sm overflow-x-auto"><code>GET {{ (request and request.base_url) or '' }}api/airports?q=jfk&size=10&page=1</code></pre>
+      </div>
+      <div class="mt-3">
+        <h3 class="text-sm font-medium text-gray-900">Pagination headers</h3>
+        <pre class="mt-2 rounded bg-gray-50 border p-3 text-sm overflow-x-auto"><code>X-Total-Count, X-Page, X-Page-Size, X-Total-Pages</code></pre>
+      </div>
+      </div>
+    </section>
+
+    <section class="mt-4 border rounded-md" id="get_airport_details">
+      <button type="button" class="w-full flex items-center justify-between px-4 py-3 text-left" data-accordion-button aria-expanded="false" aria-controls="panel-airport-details">
+        <span class="text-xl font-semibold text-gray-900">Airport details</span>
+        <svg class="size-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/></svg>
+      </button>
+      <div id="panel-airport-details" class="px-4 pb-4 hidden">
+      <h2 class="text-xl font-semibold text-gray-900">Airport details</h2>
+      <p class="mt-2 text-gray-600">GET /api/airports/{slug} — Returns full airport record by slug.</p>
+      <div class="mt-3">
+        <h3 class="text-sm font-medium text-gray-900">Path parameters</h3>
+        <ul class="mt-2 space-y-1 text-sm text-gray-700 list-disc pl-6">
+          <li><span class="font-mono">slug</span> — URL-friendly identifier for the airport. Slugs are derived from the airport name (fallback: ident/ICAO/IATA). Example: <span class="font-mono">john-f-kennedy-international-airport</span>.</li>
+        </ul>
+      </div>
+      <div class="mt-3">
+        <h3 class="text-sm font-medium text-gray-900">Example request</h3>
+        <pre class="mt-2 rounded bg-gray-50 border p-3 text-sm overflow-x-auto"><code>GET {{ (request and request.base_url) or '' }}api/airports/john-f-kennedy-international-airport</code></pre>
+      </div>
+      <div class="mt-3">
+        <h3 class="text-sm font-medium text-gray-900">Successful response (200)</h3>
+        <pre class="mt-2 rounded bg-gray-50 border p-3 text-sm overflow-x-auto"><code>{
+  "id": 3797,
+  "ident": "KJFK",
+  "name": "John F Kennedy International Airport",
+  "iata_code": "JFK",
+  "icao_code": "KJFK",
+  "municipality": "New York",
+  "iso_country": "US",
+  "iso_region": "US-NY",
+  "type": "large_airport",
+  "latitude_deg": 40.6413,
+  "longitude_deg": -73.7781,
+  "elevation_ft": 13,
+  "slug": "john-f-kennedy-international-airport",
+  "country": {"code": "US", "name": "United States"},
+  "region": {"code": "US-NY", "name": "New York"},
+  "routes": [
+    // Optional: sample routes array when available
+  ]
+}</code></pre>
+      </div>
+      <div class="mt-3">
+        <h3 class="text-sm font-medium text-gray-900">Error responses</h3>
+        <ul class="mt-2 space-y-1 text-sm text-gray-700 list-disc pl-6">
+          <li>404 Not Found — when the slug does not match any airport. Body: {"detail": "Airport not found"}</li>
+          <li>503 Service Unavailable — when the dataset is not ready (initialization). Body: {"detail": "Dataset not ready: &lt;reason&gt;"}</li>
+          <li>500 Internal Server Error — generic failure. Body: {"detail": "Failed to get airport details"}</li>
+        </ul>
+      </div>
+      </div>
+    </section>
+
+    <section class="mt-4 border rounded-md">
+      <button type="button" class="w-full flex items-center justify-between px-4 py-3 text-left" data-accordion-button aria-expanded="false" aria-controls="panel-rate-limiting">
+        <span class="text-xl font-semibold text-gray-900">Rate limiting</span>
+        <svg class="size-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/></svg>
+      </button>
+      <div id="panel-rate-limiting" class="px-4 pb-4 hidden">
+        <p class="mt-2 text-gray-600">The API is rate limited per client IP using a fixed window.</p>
+        <ul class="mt-2 space-y-1 text-sm text-gray-700 list-disc pl-6">
+          <li>Default: {{ settings.rate_limit_requests if settings else 120 }} requests per {{ settings.rate_limit_window_seconds if settings else 60 }} seconds</li>
+          <li>Applies to paths starting with {{ settings.rate_limit_scope if settings else '/api' }}</li>
+          <li>Response headers: X-RateLimit-Limit, X-RateLimit-Remaining; When exceeded: HTTP 429 with Retry-After</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="mt-4 border rounded-md">
+      <button type="button" class="w-full flex items-center justify-between px-4 py-3 text-left" data-accordion-button aria-expanded="false" aria-controls="panel-openapi">
+        <span class="text-xl font-semibold text-gray-900">OpenAPI schema</span>
+        <svg class="size-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd"/></svg>
+      </button>
+      <div id="panel-openapi" class="px-4 pb-4 hidden">
+        <p class="mt-2 text-gray-600">This project disables the default Swagger UI. You can explore endpoints above or the source code in app/api/api.py.</p>
+      </div>
+    </section>
+  </div>
+  <script>
+    // Simple, accessible accordion: toggles aria-expanded and hidden class
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('[data-accordion-button]').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var expanded = this.getAttribute('aria-expanded') === 'true';
+          var targetId = this.getAttribute('aria-controls');
+          var panel = document.getElementById(targetId);
+          this.setAttribute('aria-expanded', String(!expanded));
+          if (panel) {
+            panel.classList.toggle('hidden', expanded);
+          }
+        });
+      });
+    });
+  </script>
+{% endblock %}

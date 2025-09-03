@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en" class="h-full bg-white">
+<head>
+  {# Title is provided by children via {% set title = '...' %} #}
+  {% include 'partials/head.html' %}
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="h-full leading-normal tracking-normal">
+    <div class="min-h-screen flex flex-col">
+        {% include 'partials/header.html' %}
+        <div id="header-spacer" aria-hidden="true"></div>
+        <main class="flex-1">
+            <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+        {% include 'partials/footer.html' %}
+    </div>
+
+    <script>
+  // Guarded scroll behavior for header styling without brittle element assumptions
+  (function () {
+    var header = document.getElementById("header");
+    var spacer = document.getElementById("header-spacer");
+    var navcontent = document.getElementById("nav-content");
+    var toToggle = document.querySelectorAll(".toggleColour");
+
+    function updateSpacer() {
+      if (!header || !spacer) return;
+      try {
+        var h = header.getBoundingClientRect().height || 0;
+        spacer.style.height = h + "px";
+      } catch (e) {}
+    }
+
+    function onScroll() {
+      var scrollpos = window.scrollY || 0;
+      if (!header) return;
+      if (scrollpos > 10) {
+        header.classList.add("bg-white", "shadow");
+        if (navcontent) {
+          navcontent.classList.add("bg-white");
+          navcontent.classList.remove("bg-gray-100");
+        }
+        for (var i = 0; i < toToggle.length; i++) {
+          toToggle[i].classList.add("text-gray-800");
+          toToggle[i].classList.remove("text-white");
+        }
+      } else {
+        header.classList.add("bg-white");
+        header.classList.remove("shadow");
+        if (navcontent) {
+          navcontent.classList.add("bg-white");
+          navcontent.classList.remove("bg-gray-100");
+        }
+        for (var j = 0; j < toToggle.length; j++) {
+          toToggle[j].classList.add("text-white");
+          toToggle[j].classList.remove("text-gray-800");
+        }
+      }
+    }
+
+    // Init
+    window.addEventListener("load", function(){ updateSpacer(); onScroll(); });
+    window.addEventListener("resize", updateSpacer);
+    document.addEventListener("scroll", onScroll, { passive: true });
+  })();
+</script>
+    <script>
+      /*Toggle dropdown list*/
+      /*https://gist.github.com/slavapas/593e8e50cf4cc16ac972afcbad4f70c8*/
+
+      var navMenuDiv = document.getElementById("nav-content");
+      var navMenu = document.getElementById("nav-toggle");
+
+      document.onclick = check;
+      function check(e) {
+        var target = (e && e.target) || (event && event.srcElement);
+
+        //Nav Menu
+        if (!checkParent(target, navMenuDiv)) {
+          // click NOT on the menu
+          if (checkParent(target, navMenu)) {
+            // click on the link
+            if (navMenuDiv.classList.contains("hidden")) {
+              navMenuDiv.classList.remove("hidden");
+            } else {
+              navMenuDiv.classList.add("hidden");
+            }
+          } else {
+            // click both outside link and outside menu, hide menu
+            navMenuDiv.classList.add("hidden");
+          }
+        }
+      }
+      function checkParent(t, elm) {
+        while (t.parentNode) {
+          if (t == elm) {
+            return true;
+          }
+          t = t.parentNode;
+        }
+        return false;
+      }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

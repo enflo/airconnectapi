@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% set title = 'Airports Map • Air connect API' %}
+{% set description = 'Interactive world map of airports with type-specific markers that reveal more at higher zoom levels.' %}
+
+{% block head_extra %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <style>
+    /* Ensure the page can use full height */
+    html, body { height: 100%; }
+
+    /* Emoji-based map markers */
+    .emoji-icon { background: transparent; border: none; }
+    .emoji-marker {
+      width: 22px;
+      height: 22px;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff; /* text color for letters; emojis keep their own colors */
+      font-size: 13px;
+      line-height: 1;
+      border: 1px solid rgba(0,0,0,0.15);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    }
+    .emoji-marker span { transform: translateY(-0.5px); }
+  </style>
+{% endblock %}
+
+{% block body_class %}bg-gray-50 text-gray-900 h-full{% endblock %}
+
+{% block content %}
+  <div class="flex flex-col h-full">
+
+    <div class="max-w-7xl mx-auto w-full px-4 py-2 text-sm text-gray-600" id="status">Loading map...</div>
+
+    <main class="flex-1">
+      <div id="map" class="w-full h-full" style="height: calc(100vh - 120px);"></div>
+    </main>
+
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    function escapeHtml(str) {
+      return String(str == null ? '' : str).replace(/[&<>"']/g, s => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[s]));
+    }
+
+    let map, tileLayer;
+
+    // Marker/layer configuration per airport type
+    const TYPE_CONFIG = {
+      large_airport:   { color: '#f97316', minZoom: 0,  emoji: '✈️' },  // orange
+      medium_airport:  { color: '#22c55e', minZoom: 5,  emoji: '✈️' },  // green
+      small_airport:   { color: '#3b82f6', minZoom: 8,  emoji: '✈️' },  // blue
+      heliport:        { color: '#a855f7', minZoom: 11, emoji: '🚁' }, // purple
+      seaplane_base:   { color: '#06b6d4', minZoom: 11, emoji: '⚓' }, // cyan
+    };
+
+    const layers = {};     // type -> L.LayerGroup
+    const loaded = {};     // type -> boolean (data loaded once)
+    const boundsByType = {}; // type -> L.LatLngBounds
+
+    function ensureLayer(type) {
+      if (!layers[type]) {
+        layers[type] = L.layerGroup();
+        boundsByType[type] = L.latLngBounds();
+        loaded[type] = false;
+      }
+      return layers[type];
+    }
+
+    function initMap() {
+      map = L.map('map');
+      tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+      map.setView([20, 0], 2); // Initial world view
+
+      // Pre-create layers
+      Object.keys(TYPE_CONFIG).forEach(t => ensureLayer(t));
+
+      map.on('zoomend', refreshLayersVisibility);
+    }
+
+    function markerFor(type, lat, lon) {
+      const cfg = TYPE_CONFIG[type] || { color: '#334155', emoji: '•' };
+      const style = (type === 'large_airport')
+        ? 'background-color:transparent;border:none;box-shadow:none;'
+        : `background-color:${cfg.color}`;
+      const html = `<div class="emoji-marker" style="${style}"><span>${cfg.emoji || '•'}</span></div>`;
+      const icon = L.divIcon({
+        className: 'emoji-icon',
+        html,
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+        popupAnchor: [0, -11],
+      });
+      return L.marker([lat, lon], { icon });
+    }
+
+    function addAirportsToLayer(type, items) {
+      const layer = ensureLayer(type);
+      const b = boundsByType[type];
+      let plotted = 0;
+      for (const a of items) {
+        const atype = String(a.type || '').toLowerCase();
+        if (atype !== type) continue;
+        const iata = a.iata_code || '';
+        const icao = a.icao_code || '';
+        if (!iata && !icao) continue; // require at least one code
+        const lat = a.latitude_deg;
+        const lon = a.longitude_deg;
+        if (lat == null || lon == null) continue;
+        if (!isFinite(lat) || !isFinite(lon)) continue;
+        const m = markerFor(type, lat, lon);
+        const name = a.name || a.ident || '';
+        const slug = a.slug || '';
+        const country = (a.country && a.country.name) || a.iso_country || '';
+        m.bindPopup(`
+          <div class="text-sm">
+            <div class="font-semibold mb-1">${escapeHtml(name)}</div>
+            <div class="text-gray-600">IATA: ${escapeHtml(iata)} • ICAO: ${escapeHtml(icao)}</div>
+            <div class="text-gray-600">${escapeHtml(atype)} • ${escapeHtml(country)}</div>
+            ${slug ? `<div class="mt-2"><a class="text-blue-600 hover:underline" href="/airports/${encodeURIComponent(slug)}">Details</a></div>` : ''}
+          </div>
+        `);
+        m.addTo(layer);
+        try { b.extend([lat, lon]); } catch (e) {}
+        plotted++;
+      }
+      return plotted;
+    }
+
+    async function loadType(type) {
+      if (loaded[type]) return 0;
+      const status = document.getElementById('status');
+      const size = 1000;
+      let page = 1;
+      let totalPages = 1;
+      let totalPlotted = 0;
+      try {
+        do {
+          const resp = await fetch(`/api/airports?size=${size}&page=${page}&type=${encodeURIComponent(type)}`);
+          if (!resp.ok) throw new Error(`Failed to fetch type ${type} page ${page}`);
+          const items = await resp.json();
+          const tp = parseInt(resp.headers.get('X-Total-Pages') || '1', 10);
+          totalPages = isNaN(tp) ? 1 : tp;
+          const plotted = addAirportsToLayer(type, items);
+          totalPlotted += plotted;
+          status.textContent = `Loaded ${totalPlotted} markers for ${type} (page ${page}/${totalPages})...`;
+          page += 1;
+        } while (page <= totalPages);
+        loaded[type] = true;
+        status.textContent = `Loaded ${totalPlotted} markers for ${type}.`;
+        return totalPlotted;
+      } catch (e) {
+        console.error(e);
+        status.textContent = `Failed to load airports for ${type}.`;
+        return 0;
+      }
+    }
+
+    function refreshLayersVisibility() {
+      const z = map.getZoom();
+      const types = Object.keys(TYPE_CONFIG);
+      types.forEach(async (t) => {
+        const cfg = TYPE_CONFIG[t];
+        const layer = ensureLayer(t);
+        const shouldShow = z >= (cfg.minZoom || 0);
+        const onMap = map.hasLayer(layer);
+        if (shouldShow && !onMap) {
+          // Lazy-load data on first show
+          if (!loaded[t]) {
+            await loadType(t);
+          }
+          layer.addTo(map);
+        } else if (!shouldShow && onMap) {
+          map.removeLayer(layer);
+        }
+      });
+
+      // Fit bounds on first load of large airports
+      if (loaded.large_airport && boundsByType.large_airport && boundsByType.large_airport.isValid && boundsByType.large_airport.isValid()) {
+        // Only fit once; remove the bounds to avoid repeated fits
+        map.fitBounds(boundsByType.large_airport, { padding: [20, 20] });
+        // Invalidate so we don't keep fitting
+        boundsByType.large_airport = { isValid: () => false };
+      }
+    }
+
+    async function boot() {
+      initMap();
+      // Ensure initial visible types are loaded and shown
+      await loadType('large_airport');
+      ensureLayer('large_airport').addTo(map);
+      refreshLayersVisibility();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      boot();
+    });
+  </script>
+{% endblock %}

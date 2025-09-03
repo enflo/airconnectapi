@@ -1,0 +1,345 @@
+{% extends 'base.html' %}
+{% set title = 'Airport Details' %}
+{% if airport and airport.name %}
+  {% set title = airport.name %}
+  {% set description = (airport.name ~ ' — ' ~ (airport.municipality or '') ~ (airport.municipality and ', ' or '') ~ (airport.country and airport.country.name or airport.iso_country or '')) | trim %}
+  {% set og_image = (request and request.base_url) ~ 'static/hero.png' %}
+{% endif %}
+
+{% block head_extra %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+{% endblock %}
+
+{% block body_class %}bg-gray-50 text-gray-900{% endblock %}
+
+{% block content %}
+  <div class="max-w-4xl mx-auto pt-24">
+    <nav class="mb-4" aria-label="Breadcrumb">
+      <ol role="list" class="flex items-center gap-2 text-sm text-gray-600">
+        <li>
+          <a href="/" class="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" class="size-4"><path d="M9.293 2.293a1 1 0 0 1 1.414 0l6 6A1 1 0 0 1 16.293 10H15v6a1 1 0 0 1-1 1h-3v-4H9v4H6a1 1 0 0 1-1-1v-6H3.707a1 1 0 0 1-.707-1.707l6-6Z"/></svg>
+            Home
+          </a>
+        </li>
+        <li aria-hidden="true" class="text-gray-400">
+          <svg viewBox="0 0 20 20" fill="currentColor" class="size-4"><path fill-rule="evenodd" d="M7.22 14.78a.75.75 0 0 1 0-1.06L10.94 10 7.22 6.28a.75.75 0 1 1 1.06-1.06l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0Z" clip-rule="evenodd"/></svg>
+        </li>
+        <li class="inline-flex items-center gap-1 text-gray-700" aria-current="page">
+          <span id="crumb-airport">Airport details</span>
+        </li>
+      </ol>
+    </nav>
+    <section id="alert" class="hidden mb-4 p-3 rounded bg-yellow-50 text-yellow-800 border border-yellow-200"></section>
+    <div id="detail-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <section id="card" class="bg-white shadow rounded p-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <div class="text-sm text-gray-500">Name</div>
+            <div id="name" class="font-medium">—</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">Ident</div>
+            <div id="ident" class="font-medium">—</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">IATA</div>
+            <div id="iata" class="font-medium">—</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">ICAO</div>
+            <div id="icao" class="font-medium">—</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">Type</div>
+            <div id="type" class="font-medium">—</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">Municipality</div>
+            <div id="municipality" class="font-medium">—</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">Country</div>
+            <div id="country" class="font-medium">—</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">Region</div>
+            <div id="region" class="font-medium">—</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">ISO Country</div>
+            <div id="iso_country" class="font-medium">—</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">ISO Region</div>
+            <div id="iso_region" class="font-medium">—</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">Elevation (ft)</div>
+            <div id="elevation" class="font-medium">—</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">Coordinates</div>
+            <div id="coords" class="font-medium">—</div>
+          </div>
+          <div class="md:col-span-2">
+            <div class="text-sm text-gray-500">Links</div>
+            <div id="links" class="space-x-3 text-blue-600"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="map-section" class="bg-white shadow rounded p-4 mb-6 hidden">
+        <h2 class="text-lg font-semibold mb-3">Location map</h2>
+        <div id="map" class="w-full h-80 rounded border"></div>
+      </section>
+    </div>
+    <section id="routes-section" class="bg-white shadow rounded p-4 mb-6 hidden">
+      <h2 class="text-lg font-semibold mb-3">Routes</h2>
+      <div id="routes-empty" class="text-sm text-gray-500 hidden">No routes available.</div>
+      <div class="overflow-auto">
+        <table class="min-w-full border text-sm">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-2 py-1 border">To (IATA)</th>
+              <th class="px-2 py-1 border">Carriers</th>
+              <th class="px-2 py-1 border">Distance (km)</th>
+              <th class="px-2 py-1 border">Time (min)</th>
+            </tr>
+          </thead>
+          <tbody id="routes-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    function escapeHtml(str) {
+      return String(str == null ? '' : str).replace(/[&<>"']/g, s => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[s]));
+    }
+
+    function getSlugFromPath() {
+      const parts = window.location.pathname.split('/').filter(Boolean);
+      return parts.length >= 2 ? decodeURIComponent(parts[1]) : '';
+    }
+
+    function setText(id, val) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val || '—';
+    }
+
+    function link(href, text) {
+      return `<a href="${href}" target="_blank" rel="noopener" class="hover:underline">${escapeHtml(text)}</a>`;
+    }
+
+    let _map, _tileLayer, _marker, _routesLayer;
+    function showMap(lat, lon, name) {
+      try {
+        if (!_map) {
+          _map = L.map('map');
+          _tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          }).addTo(_map);
+          if (!_routesLayer) {
+            _routesLayer = L.layerGroup().addTo(_map);
+          }
+        }
+        _map.setView([lat, lon], 12);
+        if (!_marker) {
+          _marker = L.marker([lat, lon]).addTo(_map);
+        } else {
+          _marker.setLatLng([lat, lon]);
+        }
+        if (name) {
+          _marker.bindPopup(escapeHtml(name));
+        }
+        setTimeout(() => { try { _map.invalidateSize(); } catch (e) {} }, 0);
+      } catch (e) {
+        console.error('Failed to initialize map', e);
+      }
+    }
+
+    function carriersText(cs) {
+      if (!Array.isArray(cs) || cs.length === 0) return '—';
+      const names = cs.map(c => (c && (c.name || c.iata)) ? String(c.name || c.iata) : '').filter(Boolean);
+      return names.length ? names.map(escapeHtml).join(', ') : '—';
+    }
+
+    // Cache for IATA -> airport data to avoid repeated network requests
+    const IATA_CACHE = new Map();
+
+    async function fetchAirportByIata(iata) {
+      const code = (iata || '').trim().toUpperCase();
+      if (!code) return null;
+      if (IATA_CACHE.has(code)) return IATA_CACHE.get(code);
+      try {
+        const resp = await fetch(`/api/airports?iata=${encodeURIComponent(code)}&limit=1`);
+        if (!resp.ok) {
+          IATA_CACHE.set(code, null);
+          return null;
+        }
+        const arr = await resp.json();
+        const airport = Array.isArray(arr) ? arr[0] : null;
+        if (airport && airport.latitude_deg != null && airport.longitude_deg != null) {
+          IATA_CACHE.set(code, airport);
+          return airport;
+        }
+        IATA_CACHE.set(code, null);
+        return null;
+      } catch (e) {
+        console.error('Failed to fetch airport by IATA', iata, e);
+        IATA_CACHE.set(code, null);
+        return null;
+      }
+    }
+
+    async function drawRoutesOnMap(originLat, originLon, originName, routes) {
+      if (!_map || !_routesLayer) return;
+      try { _routesLayer.clearLayers(); } catch (e) {}
+      const bounds = L.latLngBounds();
+      try { bounds.extend([originLat, originLon]); } catch (e) {}
+
+      const tasks = [];
+      for (const r of (Array.isArray(routes) ? routes : [])) {
+        const destIata = r && r.iata ? String(r.iata).trim().toUpperCase() : '';
+        if (!destIata) continue;
+        tasks.push((async () => {
+          const dest = await fetchAirportByIata(destIata);
+          if (!dest) return;
+          const dlat = dest.latitude_deg, dlon = dest.longitude_deg;
+          if (dlat == null || dlon == null || !isFinite(dlat) || !isFinite(dlon)) return;
+          const line = L.polyline([[originLat, originLon], [dlat, dlon]], { color: '#2563eb', weight: 2, opacity: 0.7 });
+          line.addTo(_routesLayer);
+          const marker = L.circleMarker([dlat, dlon], { radius: 4, color: '#dc2626', fillColor: '#ef4444', fillOpacity: 0.9 });
+          const name = dest.name || dest.ident || dest.iata_code || dest.slug || '';
+          const slug = dest.slug || '';
+          const popup = `
+            <div class="text-sm">
+              <div class="font-semibold mb-1">${escapeHtml(name)}</div>
+              <div class="text-gray-600">IATA: ${escapeHtml(dest.iata_code || '')} • ICAO: ${escapeHtml(dest.icao_code || '')}</div>
+              ${slug ? `<div class="mt-1"><a class="text-blue-600 hover:underline" href="/airports/${encodeURIComponent(slug)}">Details</a></div>` : ''}
+            </div>`;
+          marker.bindPopup(popup);
+          marker.addTo(_routesLayer);
+          try { bounds.extend([dlat, dlon]); } catch (e) {}
+        })());
+      }
+
+      try {
+        await Promise.all(tasks);
+      } catch (e) {
+        console.error('Failed to draw one or more routes', e);
+      }
+
+      // Fit map to show all points if we have at least the origin
+      try {
+        if (bounds && bounds.isValid && bounds.isValid()) {
+          _map.fitBounds(bounds, { padding: [20, 20] });
+        }
+      } catch (e) {}
+    }
+
+    function renderRoutes(routes) {
+      const section = document.getElementById('routes-section');
+      const empty = document.getElementById('routes-empty');
+      const tbody = document.getElementById('routes-body');
+      if (!section || !empty || !tbody) return;
+
+      if (!Array.isArray(routes) || routes.length === 0) {
+        section.classList.remove('hidden');
+        empty.classList.remove('hidden');
+        tbody.innerHTML = '';
+        return;
+      }
+
+      empty.classList.add('hidden');
+      tbody.innerHTML = '';
+      for (const r of routes) {
+        const tr = document.createElement('tr');
+        const dest = r && r.iata ? String(r.iata) : '';
+        const km = (r && (r.km != null)) ? r.km : null;
+        const minutes = (r && (r.min != null)) ? r.min : null;
+        tr.innerHTML = `
+          <td class="px-2 py-1 border">${escapeHtml(dest)}</td>
+          <td class="px-2 py-1 border">${carriersText(r && r.carriers)}</td>
+          <td class="px-2 py-1 border">${km == null ? '—' : escapeHtml(String(km))}</td>
+          <td class="px-2 py-1 border">${minutes == null ? '—' : escapeHtml(String(minutes))}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+      section.classList.remove('hidden');
+    }
+
+    async function loadDetails() {
+      const slug = getSlugFromPath();
+      const alert = document.getElementById('alert');
+      try {
+        const resp = await fetch(`/api/airports/${encodeURIComponent(slug)}`);
+        if (!resp.ok) {
+          alert.classList.remove('hidden');
+          alert.textContent = 'Airport not found';
+          return;
+        }
+        const a = await resp.json();
+
+        const titleEl = document.getElementById('title');
+        const nameText = a.name || a.ident || 'Airport details';
+        if (titleEl) titleEl.textContent = nameText;
+        const crumb = document.getElementById('crumb-airport');
+        if (crumb) crumb.textContent = nameText;
+        setText('name', a.name);
+        setText('ident', a.ident);
+        setText('iata', a.iata_code);
+        setText('icao', a.icao_code);
+        setText('type', a.type);
+        setText('municipality', a.municipality);
+        setText('iso_country', a.iso_country);
+        setText('iso_region', a.iso_region);
+        setText('elevation', a.elevation_ft != null ? String(a.elevation_ft) : '—');
+        const lat = a.latitude_deg, lon = a.longitude_deg;
+        setText('coords', (lat != null && lon != null) ? `${lat}, ${lon}` : '—');
+        if (lat != null && lon != null) {
+          const sec = document.getElementById('map-section');
+          if (sec) sec.classList.remove('hidden');
+          showMap(lat, lon, a.name || a.ident || '');
+        }
+
+        const country = (a.country && a.country.name) || '';
+        const region = (a.region && a.region.name) || '';
+        setText('country', country);
+        setText('region', region);
+
+        const links = [];
+        if (a.wikipedia_link) links.push(link(a.wikipedia_link, 'Wikipedia'));
+        if (a.home_link) links.push(link(a.home_link, 'Website'));
+        if (lat != null && lon != null) {
+          links.push(link(`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=12/${lat}/${lon}`, 'Map'));
+        }
+        document.getElementById('links').innerHTML = links.join(' ');
+
+        // Render routes table
+        renderRoutes(a.routes);
+
+        // Draw routes on map
+        if (lat != null && lon != null && Array.isArray(a.routes) && a.routes.length) {
+          try { await drawRoutesOnMap(lat, lon, a.name || a.ident || '', a.routes); } catch (e) { console.error('Failed to draw routes', e); }
+        }
+
+      } catch (err) {
+        alert.classList.remove('hidden');
+        alert.textContent = 'Failed to load details';
+        console.error(err);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadDetails();
+    });
+  </script>
+{% endblock %}
