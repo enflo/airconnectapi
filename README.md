@@ -111,3 +111,27 @@ MIT — see LICENSE.
 - Uvicorn — ASGI server
 - Pydantic — data validation
 - OurAirports/OpenFlights — datasets
+
+## Docker
+
+Build the image:
+- docker build -t airconnectapi .
+
+Run the container:
+- docker run -p 8000:8000 \
+  -e ALLOWED_ORIGINS=* \
+  -e RATE_LIMIT_ENABLED=1 \
+  -v $(pwd)/data:/app/data \
+  --name airconnectapi \
+  airconnectapi
+
+Compose (recommended for local dev):
+- docker compose up --build
+
+After start, browse:
+- http://127.0.0.1:8000/
+
+Notes:
+- The container initializes a SQLite database at /app/data/openflight.db from /app/impoted_data at startup.
+- Environment variables control CORS and rate limiting; see Settings above.
+- To inject your own dataset files, bind-mount ./impoted_data read-only to /app/impoted_data.

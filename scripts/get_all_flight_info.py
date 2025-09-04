@@ -78,11 +78,12 @@ def download_file(
             if temp_dest.exists():
                 try:
                     temp_dest.unlink()
-                except Exception:
-                    pass
+                except OSError as cleanup_exc:
+                    logging.debug("Failed to remove temp file %s: %s", temp_dest, cleanup_exc)
 
-    assert last_error is not None
-    raise last_error
+    if last_error is not None:
+        raise RuntimeError(f"Failed to download {url} after {retries} attempts: {last_error}")
+    raise RuntimeError(f"Failed to download {url} after {retries} attempts")
 
 
 def download_all(urls: Iterable[str], output_dir: Path, force: bool = False) -> None:

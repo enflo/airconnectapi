@@ -1,0 +1,23 @@
+version: "3.9"
+services:
+  web:
+    build: .
+    image: airconnectapi:latest
+    ports:
+      - "8000:8000"
+    environment:
+      # Override defaults as needed
+      - ENVIRONMENT=development
+      - RATE_LIMIT_ENABLED=0
+      - ALLOWED_ORIGINS=*
+    volumes:
+      # Persist SQLite database outside the container lifecycle
+      - ./data:/app/data
+      # Optionally, override impoted_data with local files
+      # - ./impoted_data:/app/impoted_data:ro
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
