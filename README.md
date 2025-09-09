@@ -135,3 +135,31 @@ Notes:
 - The container initializes a SQLite database at /app/data/openflight.db from /app/impoted_data at startup.
 - Environment variables control CORS and rate limiting; see Settings above.
 - To inject your own dataset files, bind-mount ./impoted_data read-only to /app/impoted_data.
+
+## Ubuntu deployment (systemd + Nginx)
+
+The repository includes production-ready deployment assets under deploy/:
+- deploy/ubuntu-deploy.sh: idempotent installer that sets up Python venv, systemd service, and Nginx reverse proxy.
+- deploy/openflight.service: example systemd unit.
+- deploy/openflight.nginx.conf: example Nginx site configuration.
+
+Quick start on a fresh Ubuntu host (run as root):
+- apt update && apt install -y git
+- git clone <this-repo> /opt/openflight-src && cd /opt/openflight-src
+- bash deploy/ubuntu-deploy.sh
+
+What the script does:
+- Creates a system user openflight and installs the app under /opt/openflight
+- Creates a Python venv at /opt/openflight/.venv and installs dependencies
+- Installs a systemd unit openflight.service that runs uvicorn main:app on 127.0.0.1:8000
+- Installs Nginx reverse proxy serving / and static files from /opt/openflight/app/static at /static
+- Creates /etc/default/openflight for environment variables (e.g., RATE_LIMIT_ENABLED=0)
+
+Managing the service:
+- systemctl status openflight
+- systemctl restart openflight
+- journalctl -u openflight -f
+
+TLS/HTTPS:
+- For HTTPS, install certbot and adjust Nginx server block or use a reverse proxy/Load Balancer.
+- Example: apt install -y certbot python3-certbot-nginx && certbot --nginx

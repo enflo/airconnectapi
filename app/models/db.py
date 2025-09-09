@@ -144,7 +144,15 @@ def populate_db_from_files(input_dir: Path) -> Tuple[int, int]:
         total = int(cur.fetchone()[0])
         return 0, total
     # Build dataset
-    data = combine(input_dir, limit=None)
+    try:
+        data = combine(input_dir, limit=None)  # type: ignore[misc]
+    except Exception:
+        # Fallback: load precombined JSON if available
+        combined_path = input_dir / "airports_combined.json"
+        if not combined_path.exists():
+            raise FileNotFoundError(f"Missing combined dataset: {combined_path}")
+        with combined_path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
     # Ensure slugs present and insert
     inserted = upsert_airports(conn, data)
     return inserted, len(data)
@@ -170,6 +178,15 @@ def query_airports(
 
     When page_size is provided, total_count is returned; otherwise it's None.
     """
+    # Ensure DB schema and data are present even if lifespan didn't run
+    init_db(conn)
+    try:
+        if not db_has_data(conn):
+            populate_db_from_files(Path("impoted_data"))
+    except Exception:
+        # If population fails, proceed; API will 503/500 appropriately later
+        pass
+
     conditions = []
     params: List[Any] = []
 
@@ -239,6 +256,13 @@ def query_airports(
 
 
 def get_airport_by_slug(conn: sqlite3.Connection, slug: str) -> Optional[Dict[str, Any]]:
+    # Ensure DB exists and is populated for direct detail access
+    init_db(conn)
+    try:
+        if not db_has_data(conn):
+            populate_db_from_files(Path("impoted_data"))
+    except Exception:
+        pass
     cur = conn.execute("SELECT data FROM airports WHERE slug = ?", (slug,))
     row = cur.fetchone()
     return json.loads(row[0]) if row else None
