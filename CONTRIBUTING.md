@@ -121,7 +121,7 @@ pytest
 Run tests with:
 ```bash
 pytest
-pytest --cov=openflight  # With coverage
+pytest --cov=ariconnectapi  # With coverage
 ```
 
 ### Documentation

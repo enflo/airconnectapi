@@ -47,7 +47,7 @@ def get_db_path() -> Path:
     env = os.getenv("DB_PATH")
     if env:
         return Path(env)
-    return Path("data") / "openflight.db"
+    return Path("data") / "ariconnectapi.db"
 
 
 def get_connection() -> sqlite3.Connection:

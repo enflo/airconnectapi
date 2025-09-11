@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "openflight"
+name = "airconnectapi"
 version = "0.1.0"
 description = "A FastAPI-based open source project"
 readme = "README.md"
@@ -46,9 +46,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/openflight"
-Repository = "https://github.com/yourusername/openflight"
-Issues = "https://github.com/yourusername/openflight/issues"
+Homepage = "https://github.com/yourusername/airconnectapi"
+Repository = "https://github.com/yourusername/airconnectapi"
+Issues = "https://github.com/yourusername/airconnectapi/issues"
 
 [tool.black]
 line-length = 88
@@ -72,7 +72,7 @@ extend-exclude = '''
 profile = "black"
 multi_line_output = 3
 line_length = 88
-known_first_party = ["openflight"]
+known_first_party = ["airconnectapi"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

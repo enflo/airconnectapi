@@ -37,7 +37,7 @@ Open https://airconnectapi.com/.
 Notes
 - Static files are under app/static and mounted at /static.
 - CORS and rate-limiting are configured via environment variables (see Settings below).
-- The SQLite DB is stored at data/openflight.db and is populated at startup from impoted_data/.
+- The SQLite DB is stored at data/airconnectapi.db and is populated at startup from impoted_data/.
 
 ## API overview
 
@@ -77,7 +77,7 @@ Example
 
 Troubleshooting
 - If rate limiting causes 429s during tests, set RATE_LIMIT_ENABLED=0.
-- If SQLite file is locked, ensure no parallel processes use data/openflight.db.
+- If SQLite file is locked, ensure no parallel processes use data/airconnectapi.db.
 
 ## Project structure
 
@@ -132,7 +132,7 @@ After start, browse:
 - http://127.0.0.1:8000/
 
 Notes:
-- The container initializes a SQLite database at /app/data/openflight.db from /app/impoted_data at startup.
+- The container initializes a SQLite database at /app/data/airconnectapi.db from /app/impoted_data at startup.
 - Environment variables control CORS and rate limiting; see Settings above.
 - To inject your own dataset files, bind-mount ./impoted_data read-only to /app/impoted_data.
 
@@ -140,25 +140,25 @@ Notes:
 
 The repository includes production-ready deployment assets under deploy/:
 - deploy/ubuntu-deploy.sh: idempotent installer that sets up Python venv, systemd service, and Nginx reverse proxy.
-- deploy/openflight.service: example systemd unit.
-- deploy/openflight.nginx.conf: example Nginx site configuration.
+- deploy/openflight.service: example systemd unit (for Airconnect API).
+- deploy/openflight.nginx.conf: example Nginx site configuration (for Airconnect API).
 
 Quick start on a fresh Ubuntu host (run as root):
 - apt update && apt install -y git
-- git clone <this-repo> /opt/openflight-src && cd /opt/openflight-src
+- git clone <this-repo> /opt/airconnectapi-src && cd /opt/airconnectapi-src
 - bash deploy/ubuntu-deploy.sh
 
 What the script does:
-- Creates a system user openflight and installs the app under /opt/openflight
-- Creates a Python venv at /opt/openflight/.venv and installs dependencies
-- Installs a systemd unit openflight.service that runs uvicorn main:app on 127.0.0.1:8000
-- Installs Nginx reverse proxy serving / and static files from /opt/openflight/app/static at /static
-- Creates /etc/default/openflight for environment variables (e.g., RATE_LIMIT_ENABLED=0)
+- Creates a system user airconnectapi and installs the app under /opt/airconnectapi
+- Creates a Python venv at /opt/airconnectapi/.venv and installs dependencies
+- Installs a systemd unit airconnectapi.service that runs uvicorn main:app on 127.0.0.1:8000
+- Installs Nginx reverse proxy serving / and static files from /opt/airconnectapi/app/static at /static
+- Creates /etc/default/airconnectapi for environment variables (e.g., RATE_LIMIT_ENABLED=0)
 
 Managing the service:
-- systemctl status openflight
-- systemctl restart openflight
-- journalctl -u openflight -f
+- systemctl status airconnectapi
+- systemctl restart airconnectapi
+- journalctl -u airconnectapi -f
 
 TLS/HTTPS:
 - For HTTPS, install certbot and adjust Nginx server block or use a reverse proxy/Load Balancer.
